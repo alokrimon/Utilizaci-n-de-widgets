@@ -1,0 +1,179 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Mi App Flutter',
+      debugShowCheckedModeBanner: false,
+      home: const PokemonScreen(),
+    );
+  }
+}
+
+class PokemonScreen extends StatefulWidget {
+  const PokemonScreen({super.key});
+
+  @override
+  State<PokemonScreen> createState() => _PokemonScreenState();
+}
+
+class _PokemonScreenState extends State<PokemonScreen> {
+  Map<String, dynamic>? pokemonData;
+  bool isLoading = false;
+  final TextEditingController _controller = TextEditingController();
+
+  // ---- FUNCIÓN PARA OBTENER DATOS DE LA API ----
+  Future<void> fetchPokemon(String name) async {
+    setState(() => isLoading = true);
+    final url = Uri.parse('https://pokeapi.co/api/v2/pokemon/$name');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      setState(() {
+        pokemonData = json.decode(response.body);
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        pokemonData = null;
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pokémon no encontrado')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // ---------- IMAGEN DE FONDO ----------
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/fondo.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          // ---------- CONTENIDO PRINCIPAL ----------
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Busca tu Pokémon',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(2, 2),
+                            blurRadius: 4,
+                            color: Colors.black45,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _controller,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: InputDecoration(
+                        hintText: 'Ejemplo: pikachu',
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_controller.text.isNotEmpty) {
+                          fetchPokemon(_controller.text.toLowerCase());
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Text(
+                        'Buscar',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // ---------- RESULTADO ----------
+                    if (isLoading)
+                      const CircularProgressIndicator(color: Colors.white)
+                    else if (pokemonData != null)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          children: [
+                            Image.network(
+                              pokemonData!['sprites']['front_default'],
+                              height: 150,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              pokemonData!['name'].toString().toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 26,
+                                color: Colors.yellow,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Altura: ${pokemonData!['height']}  |  Peso: ${pokemonData!['weight']}',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tipo: ${pokemonData!['types'][0]['type']['name']}',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,79 @@
+import 'package:flutter/material.dart';
+'director': director.text,
+'genero': genero.text,
+'sinopsis': sinopsis.text,
+'imagen': imagen.text,
+});
+
+
+titulo.clear();
+ano.clear();
+director.clear();
+genero.clear();
+sinopsis.clear();
+imagen.clear();
+}
+
+
+@override
+Widget build(BuildContext context) {
+return Scaffold(
+appBar: AppBar(title: const Text('Administrar Películas')),
+body: SingleChildScrollView(
+padding: const EdgeInsets.all(16),
+child: Column(
+children: [
+TextField(controller: titulo, decoration: const InputDecoration(labelText: 'Título')),
+TextField(controller: ano, decoration: const InputDecoration(labelText: 'Año')),
+TextField(controller: director, decoration: const InputDecoration(labelText: 'Director')),
+TextField(controller: genero, decoration: const InputDecoration(labelText: 'Género')),
+TextField(controller: sinopsis, decoration: const InputDecoration(labelText: 'Sinopsis')),
+TextField(controller: imagen, decoration: const InputDecoration(labelText: 'URL de Imagen')),
+const SizedBox(height: 20),
+ElevatedButton(
+onPressed: guardarPelicula,
+child: const Text('Guardar Película'),
+),
+const SizedBox(height: 30),
+const Text('Películas Registradas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+const SizedBox(height: 10),
+SizedBox(
+height: 400,
+child: StreamBuilder(
+stream: FirebaseFirestore.instance.collection('peliculas').snapshots(),
+builder: (context, snapshot) {
+if (!snapshot.hasData) {
+return const Center(child: CircularProgressIndicator());
+}
+
+
+final docs = snapshot.data!.docs;
+
+
+return ListView.builder(
+itemCount: docs.length,
+itemBuilder: (context, index) {
+final data = docs[index].data() as Map<String, dynamic>;
+return ListTile(
+title: Text(data['titulo']),
+trailing: IconButton(
+icon: const Icon(Icons.delete, color: Colors.red),
+onPressed: () {
+FirebaseFirestore.instance
+.collection('peliculas')
+.doc(docs[index].id)
+.delete();
+},
+),
+);
+},
+);
+},
+),
+)
+],
+),
+),
+);
+}
+}
